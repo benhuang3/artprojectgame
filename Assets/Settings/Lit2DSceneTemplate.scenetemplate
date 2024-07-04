@@ -68,9 +68,19 @@ MonoBehaviour:
   dependencies:
   - dependency: {fileID: 2800000, guid: a7022021f9bce8941b92dea37818e8dc, type: 3}
     instantiationMode: 0
+  - dependency: {fileID: 2800000, guid: ee2eb0a93c7a3eb49bf54d251c89ec2e, type: 3}
+    instantiationMode: 0
   - dependency: {fileID: 6200000, guid: 53e215e78b3c13a49abb188932b6b835, type: 2}
     instantiationMode: 0
+  - dependency: {fileID: 2800000, guid: ee148e281f3c41c5b4ff5f8a5afe5a6c, type: 3}
+    instantiationMode: 1
   - dependency: {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+    instantiationMode: 0
+  - dependency: {fileID: 2800000, guid: 2fd6421f253b4ef1a19526541f9ffc0c, type: 3}
+    instantiationMode: 1
+  - dependency: {fileID: 11400000, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
+    instantiationMode: 1
+  - dependency: {fileID: 2100000, guid: 13fd69a1bf386fb4fbf4508fcfd16ef4, type: 2}
     instantiationMode: 0
   - dependency: {fileID: 11400000, guid: 4937c168801daa146943f8633061fdc3, type: 2}
     instantiationMode: 1
@@ -78,8 +88,14 @@ MonoBehaviour:
     instantiationMode: 0
   - dependency: {fileID: 11400000, guid: f3c0baab4eb790143946e982f67a8b19, type: 2}
     instantiationMode: 1
+  - dependency: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+    instantiationMode: 1
   - dependency: {fileID: 11400000, guid: 07bee470ca4c3544e9b39fec6f22a80b, type: 2}
     instantiationMode: 1
+  - dependency: {fileID: 12800000, guid: e3265ab4bf004d28a9537516768c1c75, type: 3}
+    instantiationMode: 1
+  - dependency: {fileID: 2800000, guid: adc425283416b914bae352646d978d0d, type: 3}
+    instantiationMode: 0
   templatePipeline: {fileID: 0}
   badge: {fileID: 0}
   addToDefaults: 1

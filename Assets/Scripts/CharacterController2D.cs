@@ -3,10 +3,10 @@ using UnityEngine.Events;
 
 public class CharacterController2D : MonoBehaviour
 {
-	[SerializeField] private float m_JumpForce = 400f;							// Amount of force added when the player jumps.
+
+	[SerializeField] private float m_JumpForce;							// Amount of force added when the player jumps.
 	[Range(0, 1)] [SerializeField] private float m_CrouchSpeed = .36f;			// Amount of maxSpeed applied to crouching movement. 1 = 100%
 	[Range(0, .3f)] [SerializeField] private float m_MovementSmoothing = .05f;	// How much to smooth out the movement
-	[SerializeField] private bool m_AirControl = false;							// Whether or not a player can steer while jumping;
 	[SerializeField] private LayerMask m_WhatIsGround;							// A mask determining what is ground to the character
 	[SerializeField] private Transform m_GroundCheck;							// A position marking where to check if the player is grounded.
 	[SerializeField] private Transform m_CeilingCheck;							// A position marking where to check for ceilings
@@ -20,10 +20,14 @@ public class CharacterController2D : MonoBehaviour
 	private Vector3 m_Velocity = Vector3.zero;
 
 	[Header("Attacking")]
-	bool attack = false;
-	float timeBetweenAttack, timeSinceAttack;
+	[SerializeField] float timeBetweenAttack;
+	float timeSinceAttack = 0;
 	[SerializeField] Transform SideAttackTransform, UpAttackTransform,DownAttackTransform;
 	[SerializeField] Vector2  SideAttackArea, UpAttackArea, DownAttackArea;
+	[SerializeField] LayerMask AttackableLayer;
+	[SerializeField] int damage;
+
+	
 	[Header("Events")]
 	[Space]
 
@@ -34,6 +38,9 @@ public class CharacterController2D : MonoBehaviour
 
 	public BoolEvent OnCrouchEvent;
 	private bool m_wasCrouching = false;
+
+	public HealthScript healthscript;
+
 
 	private void Awake()
 	{
@@ -64,24 +71,22 @@ public class CharacterController2D : MonoBehaviour
 			}
 		}
 	}
-
+	void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Enemy"))
+        {
+            Debug.Log("Collided with an enemy!");
+			healthscript.takeDamage(1);
+            // Add your custom logic here
+        }
+    }
 
 	public void Move(float move, bool crouch, bool jump)
 	{
-		// // If crouching, check to see if the character can stand up
-		// if (!crouch)
-		// {
-		// 	// If the character has a ceiling preventing them from standing up, keep them crouching
-		// 	if (Physics2D.OverlapCircle(m_CeilingCheck.position, k_CeilingRadius, m_WhatIsGround))
-		// 	{
-		// 		crouch = true;
-		// 	}
-		// }
 
 		//only control the player if grounded or airControl is turned on
-		if (m_Grounded || m_AirControl)
+		if (true)
 		{
-
 			// If crouching
 			if (crouch)
 			{
@@ -129,11 +134,6 @@ public class CharacterController2D : MonoBehaviour
 			}
 		}
 		// If the player should jump...
-		// if (jump)
-		// {
-		// 	Debug.Log(m_Grounded);
-		// }
-			// the problem is that tilemap collider is not floor
 		if (m_Grounded && jump)
 		{
 			// Add a vertical force to the player.
@@ -153,4 +153,82 @@ public class CharacterController2D : MonoBehaviour
 		theScale.x *= -1;
 		transform.localScale = theScale;
 	}
+
+	private void OnDrawGizmos()
+	{
+		Gizmos.color = Color.red;
+		Gizmos.DrawWireCube(SideAttackTransform.position, SideAttackArea);
+		Gizmos.DrawWireCube(UpAttackTransform.position, UpAttackArea);
+		Gizmos.DrawWireCube(DownAttackTransform.position, DownAttackArea);
+
+	}
+	void Hit (Transform attackTransform, Vector2 attackArea, string attackDirection)
+	{
+		Collider2D[] objectsToHit = Physics2D.OverlapBoxAll(attackTransform.position, attackArea, 0, AttackableLayer);
+		if (objectsToHit.Length > 0)
+		{
+			for (int i = 0; i < objectsToHit.Length; i++)
+			{
+				if (objectsToHit[i].GetComponent<Enemy>() != null)
+				{
+					objectsToHit[i].GetComponent<Enemy>().EnemyHit(damage);
+				}
+			}
+			switch (attackDirection)
+			{
+				case "side":
+					Debug.Log("Side Attack");
+					if (m_FacingRight)
+					{
+						m_Rigidbody2D.AddForce(new Vector2(-30.0f, -10.0f), ForceMode2D.Impulse);
+					}
+					else if (!m_FacingRight){
+						m_Rigidbody2D.AddForce(new Vector2(30.0f, -10.0f), ForceMode2D.Impulse);
+					}
+					break;
+				
+				// case "up":
+				// 	Debug.Log("Up Attack");
+				// 	m_Rigidbody2D.AddForce(new Vector2(0.0f, -3.0f));
+				// 	break;
+
+				// case "down":
+				// 	Debug.Log("Down Attack");
+				// 	m_Rigidbody2D.AddForce(new Vector2(0.0f, -3.0f));
+				// 	break;
+				
+
+			}
+
+
+		}
+		
+	}
+	public void Attack(bool attackBool, float xAxis, float yAxis)
+	{
+		timeSinceAttack += Time.deltaTime;
+		if (attackBool && timeSinceAttack  >= timeBetweenAttack)
+		{
+			timeSinceAttack = 0;
+
+			//anim.SetTrigger("Atttacking");
+			if (yAxis == 0 || yAxis < 0 && m_Grounded)
+			{
+				Hit(SideAttackTransform, SideAttackArea, "side");
+				// Debug.Log("Side Attack");
+			}
+			else if (yAxis > 0)
+			{
+				Hit(UpAttackTransform, UpAttackArea, "up");
+				// Debug.Log("Up Attack");
+			}
+
+			if (yAxis < 0 && !m_Grounded)
+			{
+				Hit(DownAttackTransform, DownAttackArea, "down");
+				// Debug.Log("Down Attack");
+			}
+		}
+	}
+
 }

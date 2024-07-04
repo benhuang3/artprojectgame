@@ -4,28 +4,37 @@ using UnityEngine;
 
 public class Character : MonoBehaviour
 {
+    // combine PlayerMovement and CharacterControlled2D scripts
+
     // Start is called before the first frame update
     public CharacterController2D controller;
-    float horizontalMove = 0f;
     public float runSpeed = 40f;
+    private float xAxis, yAxis;
     bool jump = false;
+    bool attackBool = false;
 
 
     // Update is called once per frame
     void Update()
     {
-        horizontalMove = Input.GetAxisRaw("Horizontal") * runSpeed;
+        xAxis = Input.GetAxisRaw("Horizontal") ;
+        yAxis = Input.GetAxisRaw("Vertical") ;
         if (Input.GetButtonDown("Jump"))
         {
-            jump = true;
-            
+            jump = true; 
+        }
+        if (Input.GetKeyDown("z"))
+        {
+            attackBool = true; 
         }
 
     }
     void FixedUpdate()
     {
-        controller.Move(horizontalMove * Time.fixedDeltaTime, false, jump);
+        controller.Move((xAxis * runSpeed) * Time.fixedDeltaTime, false, jump);
+        controller.Attack(attackBool, xAxis, yAxis);
 
         jump = false;
+        attackBool = false;
     }
 }
