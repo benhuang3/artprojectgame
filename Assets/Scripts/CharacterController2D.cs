@@ -1,22 +1,21 @@
 using UnityEngine;
 using UnityEngine.Events;
+using System.Collections;
+using System.Collections.Generic;
 
 public class CharacterController2D : MonoBehaviour
 {
 
 	[SerializeField] private float m_JumpForce;							// Amount of force added when the player jumps.
-	[Range(0, 1)] [SerializeField] private float m_CrouchSpeed = .36f;			// Amount of maxSpeed applied to crouching movement. 1 = 100%
-	[Range(0, .3f)] [SerializeField] private float m_MovementSmoothing = .05f;	// How much to smooth out the movement
 	[SerializeField] private LayerMask m_WhatIsGround;							// A mask determining what is ground to the character
 	[SerializeField] private Transform m_GroundCheck;							// A position marking where to check if the player is grounded.
 	[SerializeField] private Transform m_CeilingCheck;							// A position marking where to check for ceilings
-	[SerializeField] private Collider2D m_CrouchDisableCollider;				// A collider that will be disabled when crouching
 
-	const float k_GroundedRadius = .2f; // Radius of the overlap circle to determine if grounded
+	const float k_GroundedRadius = 0.5f; // Radius of the overlap circle to determine if grounded
 	private bool m_Grounded;            // Whether or not the player is grounded.
 	const float k_CeilingRadius = .2f; // Radius of the overlap circle to determine if the player can stand up
 	private Rigidbody2D m_Rigidbody2D;
-	private bool m_FacingRight = true;  // For determining which way the player is currently facing.
+	public bool m_FacingRight = true;  // For determining which way the player is currently facing.
 	private Vector3 m_Velocity = Vector3.zero;
 
 	[Header("Attacking")]
@@ -33,28 +32,46 @@ public class CharacterController2D : MonoBehaviour
 
 	public UnityEvent OnLandEvent;
 
-	[System.Serializable]
+
+
+	private bool inControl = true;
+	private bool onDashCooldown = false;
+
+	public bool isRecoil = false;
+
+	public PlayerMovement PlayerMovementscript;
+	public HealthScript healthscript;
+	public PlayerColliderScript PlayerColliderScript_reference;
+
+		[System.Serializable]
 	public class BoolEvent : UnityEvent<bool> { }
 
-	public BoolEvent OnCrouchEvent;
-	private bool m_wasCrouching = false;
 
-	public HealthScript healthscript;
-
+	private int i;
 
 	private void Awake()
 	{
 		m_Rigidbody2D = GetComponent<Rigidbody2D>();
 
+
+		if (m_Rigidbody2D == null)
+        {
+            Debug.LogError("Rigidbody2D component not found on " + gameObject.name);
+        }
+
 		if (OnLandEvent == null)
 			OnLandEvent = new UnityEvent();
 
-		if (OnCrouchEvent == null)
-			OnCrouchEvent = new BoolEvent();
+	}
+
+	private void Start()
+	{
+		Debug.Log("starting");
 	}
 
 	private void FixedUpdate()
 	{
+
 		bool wasGrounded = m_Grounded;
 		m_Grounded = false;
 
@@ -71,65 +88,27 @@ public class CharacterController2D : MonoBehaviour
 			}
 		}
 	}
-	void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.gameObject.CompareTag("Enemy"))
-        {
-            Debug.Log("Collided with an enemy!");
-			healthscript.takeDamage(1);
-            // Add your custom logic here
-        }
-    }
 
-	public void Move(float move, bool crouch, bool jump)
+
+	public void Move(float move, bool jump)
 	{
 
 		//only control the player if grounded or airControl is turned on
-		if (true)
+		if (inControl)
 		{
-			// If crouching
-			if (crouch)
-			{
-				if (!m_wasCrouching)
-				{
-					m_wasCrouching = true;
-					OnCrouchEvent.Invoke(true);
-				}
-
-				// Reduce the speed by the crouchSpeed multiplier
-				move *= m_CrouchSpeed;
-
-				// Disable one of the colliders when crouching
-				if (m_CrouchDisableCollider != null)
-					m_CrouchDisableCollider.enabled = false;
-			} else
-			{
-				// Enable the collider when not crouching
-				if (m_CrouchDisableCollider != null)
-					m_CrouchDisableCollider.enabled = true;
-
-				if (m_wasCrouching)
-				{
-					m_wasCrouching = false;
-					OnCrouchEvent.Invoke(false);
-				}
-			}
-
 			// Move the character by finding the target velocity
 			Vector3 targetVelocity = new Vector2(move * 10f, m_Rigidbody2D.velocity.y);
-			// And then smoothing it out and applying it to the character
-			m_Rigidbody2D.velocity = Vector3.SmoothDamp(m_Rigidbody2D.velocity, targetVelocity, ref m_Velocity, m_MovementSmoothing);
+
+			 m_Rigidbody2D.velocity = targetVelocity;
 
 			// If the input is moving the player right and the player is facing left...
 			if (move > 0 && !m_FacingRight)
 			{
-				// ... flip the player.
 				Flip();
 			}
 			// Otherwise if the input is moving the player left and the player is facing right...
 			else if (move < 0 && m_FacingRight)
 			{
-				// ... flip the player.
 				Flip();
 			}
 		}
@@ -162,22 +141,68 @@ public class CharacterController2D : MonoBehaviour
 		Gizmos.DrawWireCube(DownAttackTransform.position, DownAttackArea);
 
 	}
+
+	public void Attack(bool attackBool, float xAxis, float yAxis)
+	{
+		timeSinceAttack += Time.deltaTime;
+		if (inControl)
+		{
+			if (attackBool && timeSinceAttack  >= timeBetweenAttack)
+			{
+				timeSinceAttack = 0;
+
+				//anim.SetTrigger("Atttacking");
+				if (yAxis == 0 || yAxis < 0 && m_Grounded)
+				{
+					Hit(SideAttackTransform, SideAttackArea, "side");
+					// Debug.Log("Side Attack");
+				}
+				else if (yAxis > 0)
+				{
+					Hit(UpAttackTransform, UpAttackArea, "up");
+					// Debug.Log("Up Attack");
+				}
+
+				if (yAxis < 0 && !m_Grounded)
+				{
+					Hit(DownAttackTransform, DownAttackArea, "down");
+					// Debug.Log("Down Attack");
+				}
+			}
+		
+		}
+	}
+
 	void Hit (Transform attackTransform, Vector2 attackArea, string attackDirection)
 	{
 		Collider2D[] objectsToHit = Physics2D.OverlapBoxAll(attackTransform.position, attackArea, 0, AttackableLayer);
+		isRecoil = true;
 		if (objectsToHit.Length > 0)
 		{
 			for (int i = 0; i < objectsToHit.Length; i++)
 			{
+				// Debug.Log(objectsToHit[i]);
 				if (objectsToHit[i].GetComponent<Enemy>() != null)
 				{
-					objectsToHit[i].GetComponent<Enemy>().EnemyHit(damage);
+					objectsToHit[i].GetComponent<Enemy>().EnemyGetHit(damage, attackDirection);
+
+					if (isRecoil)
+					{
+						recoil(attackDirection);
+						isRecoil = false;
+					}
 				}
 			}
-			switch (attackDirection)
+		}
+	}
+
+	public void recoil(string attackDirection)
+	
+	{
+		StartCoroutine(loseControl(0.05f));
+		switch (attackDirection)
 			{
 				case "side":
-					Debug.Log("Side Attack");
 					if (m_FacingRight)
 					{
 						m_Rigidbody2D.AddForce(new Vector2(-30.0f, -10.0f), ForceMode2D.Impulse);
@@ -187,48 +212,77 @@ public class CharacterController2D : MonoBehaviour
 					}
 					break;
 				
-				// case "up":
-				// 	Debug.Log("Up Attack");
-				// 	m_Rigidbody2D.AddForce(new Vector2(0.0f, -3.0f));
-				// 	break;
+				case "up":
+					m_Rigidbody2D.velocity = Vector3.zero;
+					m_Rigidbody2D.AddForce(new Vector2(0.0f, -300.0f));
+					break;
 
-				// case "down":
-				// 	Debug.Log("Down Attack");
-				// 	m_Rigidbody2D.AddForce(new Vector2(0.0f, -3.0f));
-				// 	break;
+				case "down":
+					m_Rigidbody2D.velocity = Vector3.zero;
+					m_Rigidbody2D.AddForce(new Vector2(0.0f, 300.0f));
+					break;
 				
 
 			}
-
-
+	}
+	
+	public void Dash(bool dashBool)
+	{
+		if (dashBool && !onDashCooldown)
+		{
+			StartCoroutine(dashControl());
 		}
 		
 	}
-	public void Attack(bool attackBool, float xAxis, float yAxis)
-	{
-		timeSinceAttack += Time.deltaTime;
-		if (attackBool && timeSinceAttack  >= timeBetweenAttack)
+
+	IEnumerator dashControl()
+    {	
+		changeInControl(false);
+
+		if (m_FacingRight)
 		{
-			timeSinceAttack = 0;
-
-			//anim.SetTrigger("Atttacking");
-			if (yAxis == 0 || yAxis < 0 && m_Grounded)
-			{
-				Hit(SideAttackTransform, SideAttackArea, "side");
-				// Debug.Log("Side Attack");
-			}
-			else if (yAxis > 0)
-			{
-				Hit(UpAttackTransform, UpAttackArea, "up");
-				// Debug.Log("Up Attack");
-			}
-
-			if (yAxis < 0 && !m_Grounded)
-			{
-				Hit(DownAttackTransform, DownAttackArea, "down");
-				// Debug.Log("Down Attack");
-			}
+			m_Rigidbody2D.velocity =  new Vector3(10, 0, 0);
 		}
+		else
+		{
+			m_Rigidbody2D.velocity =  new Vector3(-10, 0, 0);
+		}
+
+        yield return new WaitForSeconds(0.3f);
+		if (! PlayerColliderScript_reference.returnInHitstun())
+		{
+			changeInControl(true);
+		}
+        
+		yield return new WaitForSeconds(0.2f);
+		onDashCooldown = false;
+
+
+    }
+	IEnumerator loseControl(float time)
+	{
+		changeInControl(false);
+		yield return new WaitForSeconds(time);
+		changeInControl(true);
+
 	}
+
+	public void changeInControl(bool b)
+	{
+		inControl = b;
+	}
+	public void playerAddForce(Vector2 v2)
+	{
+		m_Rigidbody2D.AddForce(v2, ForceMode2D.Impulse);
+	}
+
+	public void playerSetVelocity(Vector2 v2)
+	{
+		m_Rigidbody2D.velocity =  v2;
+	}
+
+
+	
+
 
 }

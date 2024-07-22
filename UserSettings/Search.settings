@@ -8,6 +8,12 @@ onBoardingDoNotAskAgain = true
 showPackageIndexes = false
 showStatusBar = false
 scopes = {
+	"last_search.3BE40471" = "collider"
+	"OpenInspectorPreview.3BE40471" = "0"
+	"currentGroup.3BE40471" = "scene"
+	"last_search.310DEAF3" = "health"
+	"OpenInspectorPreview.310DEAF3" = "0"
+	"currentGroup.310DEAF3" = "all"
 }
 providers = {
 	adb = {
@@ -55,21 +61,43 @@ providers = {
 		priority = 50
 		defaultAction = null
 	}
+	menu = {
+		active = true
+		priority = 80
+		defaultAction = null
+	}
+	settings = {
+		active = true
+		priority = 100
+		defaultAction = null
+	}
+	calculator = {
+		active = true
+		priority = 10
+		defaultAction = null
+	}
+	static_methods = {
+		active = true
+		priority = 85
+		defaultAction = null
+	}
 }
 objectSelectors = {
 }
 recentSearches = [
+	"health"
+	""
 ]
 searchItemFavorites = [
 ]
 savedSearchesSortOrder = 0
-showSavedSearchPanel = false
+showSavedSearchPanel = true
 hideTabs = false
 expandedQueries = [
 ]
-queryBuilder = false
+queryBuilder = true
 ignoredProperties = "id;name;classname;imagecontentshash"
-helperWidgetCurrentArea = "all"
+helperWidgetCurrentArea = "p:"
 disabledIndexers = ""
 minIndexVariations = 2
 findProviderIndexHelper = true
