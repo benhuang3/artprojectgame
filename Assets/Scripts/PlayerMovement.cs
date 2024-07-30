@@ -34,7 +34,7 @@ public class PlayerMovement : MonoBehaviour
     {
         xAxis = Input.GetAxisRaw("Horizontal") ;
         yAxis = Input.GetAxisRaw("Vertical") ;
-        if (Input.GetButtonDown("Jump"))
+        if (Input.GetButton("Jump"))
         {
             jump = true; 
         }

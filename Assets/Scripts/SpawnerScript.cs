@@ -36,11 +36,9 @@ public class SpawnerScript : MonoBehaviour
 
     void Update()
     {
-        // Check if it's time to spawn a new enemy
         if (Time.time >= nextSpawnTime)
         {
             SpawnEnemy();
-            // Update the time for the next spawn
             nextSpawnTime = Time.time + spawnInterval;
         }
     }
