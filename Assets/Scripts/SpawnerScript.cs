@@ -26,7 +26,7 @@ public class SpawnerScript : MonoBehaviour
         Vector2 healthSpawnPosition = new Vector3(1.6f, 0, 0);
 
 
-        playerInstance = Instantiate(playerPrefab, spawnPosition, Quaternion.identity);
+        // playerInstance = Instantiate(playerPrefab, spawnPosition, Quaternion.identity);
 
         Debug.Log( playerInstance);
 
@@ -38,7 +38,7 @@ public class SpawnerScript : MonoBehaviour
     {
         if (Time.time >= nextSpawnTime)
         {
-            SpawnEnemy();
+            // SpawnEnemy();
             nextSpawnTime = Time.time + spawnInterval;
         }
     }

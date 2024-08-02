@@ -13,6 +13,8 @@ public class PlayerColliderScript : MonoBehaviour
 
     public HealthScript healthscript;
     public GameObject playerObject;
+    public GameObject playerSprite;
+
     public Rigidbody2D m_Rigidbody2D;
     public GameObject PlayerCollider;
 
@@ -26,7 +28,7 @@ public class PlayerColliderScript : MonoBehaviour
     void Awake()
     {
         healthscript  = GameObject.FindWithTag("HealthOverlay").GetComponent<HealthScript>();
-        originalColor = playerObject.GetComponent<SpriteRenderer>().color;
+        originalColor = playerSprite.GetComponent<SpriteRenderer>().color;
 
     }
 

@@ -50,9 +50,8 @@ public class PlayerMovement : MonoBehaviour
     void FixedUpdate()
     {
       
-        controller.Move((xAxis * runSpeed) * Time.fixedDeltaTime,  jump);
+        controller.Move((xAxis * runSpeed) * Time.fixedDeltaTime,  jump, dashBool);
         controller.Attack(attackBool, xAxis, yAxis);
-        controller.Dash(dashBool);
 
         dashBool = false;
         jump = false;

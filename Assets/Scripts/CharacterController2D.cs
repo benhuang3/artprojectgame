@@ -37,7 +37,7 @@ public class CharacterController2D : MonoBehaviour
 
 
 
-	private bool m_Grounded; 
+	private bool isGrounded; 
 	private float jumpTimer = 0;
 	// private bool isJumping = false;
 	private bool inControl = true;
@@ -53,13 +53,21 @@ public class CharacterController2D : MonoBehaviour
 	public HealthScript healthscript;
 	public PlayerColliderScript PlayerColliderScript_reference;
 
+	public GameObject sideSlash;
+	public GameObject upSlash;
+	public GameObject downSlash;
+
+
 		[System.Serializable]
 	public class BoolEvent : UnityEvent<bool> { }
+
+	public Animator animator;
 
 
 
 	private void Awake()
 	{
+		// animator = GetComponent<Animator>();
 
 		attackableFilter.useLayerMask = true;
 		attackableFilter.layerMask = AttackableLayer;
@@ -85,8 +93,8 @@ public class CharacterController2D : MonoBehaviour
 	private void FixedUpdate()
 	{
 
-		bool wasGrounded = m_Grounded;
-		m_Grounded = false;
+		bool wasGrounded = isGrounded;
+		isGrounded = false;
 
 		// The player is grounded if a circlecast to the groundcheck position hits anything designated as ground
 		// This can be done using layers instead but Sample Assets will not overwrite your project settings.
@@ -95,7 +103,7 @@ public class CharacterController2D : MonoBehaviour
 		{
 			if (colliders[i].gameObject != gameObject)
 			{
-				m_Grounded = true;
+				isGrounded = true;
 				hasJumped = false;
 				hasDashed = false;
 				jumpTimer = 0;
@@ -108,7 +116,7 @@ public class CharacterController2D : MonoBehaviour
 	}
 
 
-	public void Move(float move, bool jump)
+	public void Move(float move, bool jump, bool dash)
 	{
 		// max fall speed
 		if (m_Rigidbody2D.velocity.y < -8f)
@@ -141,10 +149,10 @@ public class CharacterController2D : MonoBehaviour
 		// If the player should jump...
 		if ( ! hasJumped)
 		{
-			if (m_Grounded && jump)
+			if (isGrounded && jump)
 			{
 				// Add a vertical force to the player.
-				m_Grounded = false;
+				isGrounded = false;
 				// m_Rigidbody2D.AddForce(new Vector2(0f, m_JumpForce));
 				m_Rigidbody2D.velocity = new Vector2(m_Rigidbody2D.velocity.x, 12);
 			}
@@ -162,10 +170,25 @@ public class CharacterController2D : MonoBehaviour
 		
 
 		// no double jumps
-		if (! m_Grounded && !jump)
+		if (! isGrounded && !jump)
 		{
 			hasJumped = true;
 		}
+
+
+		//dash code
+
+		if (! hasDashed)
+		{
+			if (dash && !onDashCooldown)
+			{
+				StartCoroutine(dashControl());
+			}
+
+		}
+
+		AnimationMovementController(move, jump);
+
 	}
 
 
@@ -201,23 +224,28 @@ public class CharacterController2D : MonoBehaviour
 				timeSinceAttack = 0;
 
 				//anim.SetTrigger("Atttacking");
-				if (yAxis == 0 || yAxis < 0 && m_Grounded)
+				if (yAxis == 0 || yAxis < 0 && isGrounded)
 				{
 					Hit(SideAttackTransform.GetComponent<PolygonCollider2D>(), "side");
-					// Debug.Log("Side Attack");
+					AnimationAttackController("side");
 				}
 				else if (yAxis > 0)
 				{
 					Hit(UpAttackTransform.GetComponent<PolygonCollider2D>(), "up");
-					// Debug.Log("Up Attack");
+					AnimationAttackController("up");
+
 				}
 
-				if (yAxis < 0 && !m_Grounded)
+				if (yAxis < 0 && !isGrounded)
 				{
 					Hit(DownAttackTransform.GetComponent<PolygonCollider2D>(), "down");
-					// Debug.Log("Down Attack");
+					AnimationAttackController("down");
 				}
+
+
 			}
+
+
 		
 		}
 	}
@@ -249,7 +277,6 @@ public class CharacterController2D : MonoBehaviour
 	}
 
 	public void Recoil(string attackDirection)
-	
 	{
 		StartCoroutine(loseControl(0.05f));
 		switch (attackDirection)
@@ -274,25 +301,9 @@ public class CharacterController2D : MonoBehaviour
 					// m_Rigidbody2D.AddForce(new Vector2(0.0f, 300.0f));
 					Debug.Log("down attack");
 					break;
-					
-				
-
 			}
 	}
 	
-	public void Dash(bool dashBool)
-	{
-		if (! hasDashed)
-		{
-			if (dashBool && !onDashCooldown)
-			{
-				StartCoroutine(dashControl());
-			}
-
-		}
-		
-		
-	}
 
 	IEnumerator dashControl()
     {	
@@ -335,6 +346,22 @@ public class CharacterController2D : MonoBehaviour
 
 	}
 
+	//code to appear the slash, starts with alpha of 0, then appears and fades out
+	IEnumerator appearSlash(GameObject Gslash)
+	{
+		SpriteRenderer slash = Gslash.GetComponent<SpriteRenderer>();
+
+		Color newColor = slash.color;
+        newColor.a = 1;
+        slash.color = newColor;
+
+		yield return new WaitForSeconds(0.3f);
+
+        newColor.a = 0;
+        slash.color = newColor;
+	}
+
+
 	public void changeInControl(bool b)
 	{
 		inControl = b;
@@ -347,6 +374,66 @@ public class CharacterController2D : MonoBehaviour
 	public void playerSetVelocity(Vector2 v2)
 	{
 		m_Rigidbody2D.velocity =  v2;
+	}
+
+
+	//animation movement controller togellign triggers
+	public void AnimationMovementController(float move, bool jumping)
+	{
+
+		if (jumping)
+		{
+			animator.SetInteger("jumpStage", 1);
+			animator.SetBool("isWalking", false);
+		}
+
+		else if (! jumping && !isGrounded)
+		{
+			animator.SetInteger("jumpStage", 2);
+		}
+
+		else if( isGrounded)
+		{
+			animator.SetInteger("jumpStage", 0);
+		}
+
+
+		// walk animation
+		if (move != 0 && isGrounded && ! isDashing)
+		{
+			animator.SetBool("isWalking", true);
+
+		}
+		else if (move == 0 && isGrounded && ! isDashing)
+		{
+			animator.SetBool("isWalking", false);
+		}
+	}
+
+	public void AnimationAttackController(string attackDirection)
+	{
+		switch (attackDirection)
+			{
+				case "side":
+					animator.SetTrigger("attackTrigger");
+					StartCoroutine(appearSlash(sideSlash));
+					break;
+				
+				case "up":
+					animator.SetTrigger("upAttackTrigger");
+					StartCoroutine(appearSlash(upSlash));
+					break;
+
+				case "down":
+					animator.SetTrigger("downAttackTrigger");
+					StartCoroutine(appearSlash(downSlash));
+					break;
+			}
+	}
+
+	public void LandAnimation()
+	{
+		animator.SetInteger("jumpStage", 0);
 	}
 
 
